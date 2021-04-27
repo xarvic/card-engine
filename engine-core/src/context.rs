@@ -1,6 +1,6 @@
 use crate::state::State;
 use crate::player::{Player, Team, TeamID, PlayerID};
-use crate::card::{Stack, StackID, CardID, SharedCard, ViewPermission};
+use crate::card::{Stack, StackID, CardID, SharedCard, ViewPermission, Card};
 use std::collections::{HashSet, HashMap, BTreeMap};
 use std::any::Any;
 
@@ -13,18 +13,18 @@ impl<T> StateKey<T> {
     }
 }
 
-pub struct Context<E> {
+pub struct Context<E, C: Card> {
     players: BTreeMap<PlayerID, Player>,
     player_order: Vec<PlayerID>,
 
     teams: HashMap<TeamID, Team>,
     team_states: HashMap<(&'static str, TeamID), Box<dyn Any>>,
 
-    stacks: HashMap<StackID, Stack>,
+    stacks: HashMap<StackID, Stack<E, C>>,
 }
 
-impl<E> Context<E> {
-    pub fn new(context: C) -> Self {
+impl<E, C: Card> Context<E, C> {
+    pub fn new() -> Self {
         Context {
             players: BTreeMap::new(),
             player_order: Vec::new(),
@@ -52,7 +52,7 @@ impl<E> Context<E> {
 
     pub fn view_permission_for(&self, player: PlayerID, stack: StackID) -> ViewPermission {
         let stack = self.stack(stack);
-        stack.owner.and_then(|(team, view_permission)| { if self.contains_player(team.0, player) {
+        stack.owner.and_then(|(team, view_permission)| { if self.contains_player(team, player) {
             Some(view_permission)
         } else {
             None
@@ -149,15 +149,9 @@ impl<E> Context<E> {
         self.player_order[(index - 1 + self.player_order.len()) % self.player_order.len()]
     }
 
-    pub fn add_stack(&mut self, cards: Vec<SharedCard>, owner: impl Into<Option<TeamID>>) -> StackID {
-        let stack = Stack {
-            owner: owner.into().map(|x|(x, ViewPermission::Show)),
-            view_permission: ViewPermission::Show,
-            content: cards,
-        };
+    pub fn add_stack(&mut self, cards: Vec<C>, owner: impl Into<Option<TeamID>>) -> StackID {
         let id = StackID::new();
-
-        self.stacks.insert(id, stack);
+        self.stacks.insert(id, Stack::new(owner, crads));
 
         id
     }
@@ -166,11 +160,11 @@ impl<E> Context<E> {
         self.stacks.remove(&stack);
     }
 
-    pub fn stack(&self, stack: StackID) -> &Stack {
+    pub fn stack(&self, stack: StackID) -> &Stack<E, C> {
         &self.stacks[stack]
     }
 
-    pub fn stack_mut(&mut self, stack: StackID) -> &mut Stack {
+    pub fn stack_mut(&mut self, stack: StackID) -> &mut Stack<E, C> {
         &mut self.stacks[stack]
     }
 }

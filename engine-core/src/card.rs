@@ -1,7 +1,8 @@
 use std::num::NonZeroU64;
 use crate::util::Counter;
 use std::sync::Arc;
-use crate::player::TeamID;
+use crate::player::{TeamID, PlayerID};
+use crate::context::Context;
 
 #[repr(transparent)]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
@@ -17,8 +18,6 @@ impl CardID {
         self.0.get()
     }
 }
-
-pub type SharedCard = Arc<dyn Card>;
 
 pub trait Card {
 
@@ -51,8 +50,22 @@ pub enum ViewPermission {
     Hide
 }
 
-pub struct Stack {
+pub struct Stack<E, C: Card> {
     pub(crate) owner: Option<(TeamID, ViewPermission)>,
     pub(crate) view_permission: ViewPermission,
-    pub(crate) content: Vec<SharedCard>,
+    pub(crate) content: Vec<C>,
+    on_action: Option<Box<dyn Fn(&Context<E, C>, PlayerID) -> Option<E>>>,
+    on_drag_card: Option<Box<dyn Fn(&Context<E, C>, PlayerID, CardID, StackID) -> Option<E>>>,
+}
+
+impl<E, C: Card> Stack<E, C> {
+    pub fn new(owner: Option<TeamID>, content: Vec<C>) -> Self {
+        Self {
+            owner: owner.map(|x|(x, ViewPermission::Show)),
+            view_permission: ViewPermission::Show,
+            content,
+            on_action: None,
+            on_drag_card: None
+        }
+    }
 }
