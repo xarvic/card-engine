@@ -1,4 +1,9 @@
 [workspace]
 members = [
-    "engine-core"
+    "engine-core",
+    "mumpfkins",
+]
+
+default-members = [
+    "engine-core",
 ]
