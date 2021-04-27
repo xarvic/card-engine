@@ -66,11 +66,31 @@ impl<E> Context<E> {
     }
 
     pub fn get_team_state<T: Clone>(&self, team: TeamID, state: StateKey<T>) -> T {
-        self.team_states.get(&(state.0, player)).cloned().unwrap_or(state.1.clone())
+        self.team_states
+            .get(&(state.0, player)).cloned()
+            .unwrap_or(Box::new(state.1.clone()))
+            .downcast()
+            .unwrap()
     }
 
+    pub fn update_team_state<T: Clone>(&mut self, team: TeamID, state: StateKey<T>) -> &mut T {
+        self.team_states
+            .entry((state.0, player))
+            .or_insert(Box::new(state.1.clone()))
+            .downcast_mut()
+            .unwrap()
+    }
+
+    //TODO: fix me
+    pub fn inspect_team_state<T>(&self, team: TeamID, state: &'static StateKey<T>) -> &T {
+        self.team_states
+            .get(&(state.0, team)).map(|data|data.downcast_ref().unwrap())
+            .unwrap_or(&state.1)
+    }
+
+
     pub fn set_team_state<T>(&mut self, team: TeamID, state: StateKey<T>, value: T) {
-        self.team_states.insert((state.0, player), value);
+        self.team_states.insert((state.0, player), Box::new(value));
     }
 
     pub fn team(&self, team: TeamID) -> &Team {
@@ -100,6 +120,15 @@ impl<E> Context<E> {
 
     pub fn set_player_state<T>(&mut self, player: PlayerID, state: StateKey<T>, value: T) {
         self.set_team_state(player.into(), state, value)
+    }
+
+    pub fn update_player_state<T: Clone>(&mut self, player: PlayerID, state: StateKey<T>) -> &mut T {
+        self.update_team_state(player.into(), state)
+    }
+
+    //TODO: fix me
+    pub fn inspect_player_state<T>(&self, player: PlayerID, state: &'static StateKey<T>) -> &T {
+        self.inspect_team_state(player.into(), state)
     }
 
     pub fn player(&self, player: PlayerID) -> &Player {
