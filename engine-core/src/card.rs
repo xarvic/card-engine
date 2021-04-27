@@ -1,21 +1,24 @@
 use std::num::NonZeroU64;
-use crate::util::Counter;
+use crate::util::{Counter, AnyID};
 use std::sync::Arc;
 use crate::player::{TeamID, PlayerID};
 use crate::context::Context;
 
 #[repr(transparent)]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub struct CardID(NonZeroU64);
+pub struct CardID(AnyID);
 
 impl CardID {
     pub fn new() -> Self {
-        static IDS: Counter = Counter::new();
-        CardID(IDS.next())
+        Self(AnyID::new())
     }
 
     pub fn raw(&self) -> u64 {
-        self.0.get()
+        self.0.raw()
+    }
+
+    pub fn any(&self) -> AnyID {
+        self.0
     }
 }
 
@@ -25,16 +28,19 @@ pub trait Card {
 
 #[repr(transparent)]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub struct StackID(NonZeroU64);
+pub struct StackID(AnyID);
 
 impl StackID {
     pub fn new() -> Self {
-        static IDS: Counter = Counter::new();
-        StackID(IDS.next())
+        StackID(AnyID::new())
     }
 
     pub fn raw(&self) -> u64 {
-        self.0.get()
+        self.0.raw()
+    }
+
+    pub fn any(&self) -> AnyID {
+        self.0
     }
 }
 

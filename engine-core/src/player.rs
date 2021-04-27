@@ -1,21 +1,26 @@
 use std::num::NonZeroU64;
-use crate::util::Counter;
+use crate::util::{Counter, AnyID};
 use std::collections::HashSet;
-
-// Players and teams use the same ID counter therefore we can convert a playerID into a new unique teamID.
-static IDS: Counter = Counter::new();
 
 #[repr(transparent)]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Ord, PartialOrd)]
-pub struct PlayerID(NonZeroU64);
+pub struct PlayerID(TeamID);
 
 impl PlayerID {
     pub fn new() -> Self {
-        PlayerID(IDS.next())
+        PlayerID(TeamID::new())
     }
 
     pub fn raw(&self) -> u64 {
-        self.0.get()
+        self.0.raw()
+    }
+
+    pub fn team(&self) -> TeamID {
+        self.0
+    }
+
+    pub fn any(&self) -> AnyID {
+        self.0.any()
     }
 }
 
@@ -33,15 +38,19 @@ impl Player {
 
 #[repr(transparent)]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub struct TeamID(NonZeroU64);
+pub struct TeamID(AnyID);
 
 impl TeamID {
     pub fn new() -> Self {
-        TeamID(IDS.next())
+        Self(AnyID::new())
     }
 
     pub fn raw(&self) -> u64 {
-        self.0.get()
+        self.0.raw()
+    }
+
+    pub fn any(&self) -> AnyID {
+        self.0
     }
 }
 

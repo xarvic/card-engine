@@ -1,6 +1,6 @@
 use crate::state::State;
 use crate::player::{Player, Team, TeamID, PlayerID};
-use crate::card::{Stack, StackID, CardID, SharedCard, ViewPermission, Card};
+use crate::card::{Stack, StackID, CardID, ViewPermission, Card};
 use std::collections::{HashSet, HashMap, BTreeMap};
 use std::any::Any;
 
@@ -65,17 +65,19 @@ impl<E, C: Card> Context<E, C> {
         team_id
     }
 
-    pub fn get_team_state<T: Clone>(&self, team: TeamID, state: StateKey<T>) -> T {
+    pub fn get_team_state<T: 'static + Clone>(&self, team: TeamID, state: StateKey<T>) -> T {
         self.team_states
-            .get(&(state.0, player)).cloned()
-            .unwrap_or(Box::new(state.1.clone()))
-            .downcast()
-            .unwrap()
+            .get(&(state.0, team))
+            .map_or(
+                state.1.clone(),
+                |element|element.downcast_ref::<T>().unwrap().clone()
+            )
+
     }
 
-    pub fn update_team_state<T: Clone>(&mut self, team: TeamID, state: StateKey<T>) -> &mut T {
+    pub fn update_team_state<T: 'static + Clone>(&mut self, team: TeamID, state: StateKey<T>) -> &mut T {
         self.team_states
-            .entry((state.0, player))
+            .entry((state.0, team))
             .or_insert(Box::new(state.1.clone()))
             .downcast_mut()
             .unwrap()
@@ -89,16 +91,16 @@ impl<E, C: Card> Context<E, C> {
     }
 
 
-    pub fn set_team_state<T>(&mut self, team: TeamID, state: StateKey<T>, value: T) {
-        self.team_states.insert((state.0, player), Box::new(value));
+    pub fn set_team_state<T: 'static>(&mut self, team: TeamID, state: StateKey<T>, value: T) {
+        self.team_states.insert((state.0, team), Box::new(value));
     }
 
     pub fn team(&self, team: TeamID) -> &Team {
-        &self.teams[team]
+        &self.teams[&team]
     }
 
     pub fn team_mut(&mut self, team: TeamID) -> &mut Team {
-        &mut self.teams[team]
+        self.teams.get_mut(&team).unwrap()
     }
 
     pub fn add_player(&mut self, name: &str) -> PlayerID {
@@ -114,44 +116,44 @@ impl<E, C: Card> Context<E, C> {
         id
     }
 
-    pub fn get_player_state<T: Clone>(&self, player: PlayerID, state: StateKey<T>) -> T {
+    pub fn get_player_state<T: 'static + Clone>(&self, player: PlayerID, state: StateKey<T>) -> T {
         self.get_team_state(player.into(), state)
     }
 
-    pub fn set_player_state<T>(&mut self, player: PlayerID, state: StateKey<T>, value: T) {
+    pub fn set_player_state<T: 'static>(&mut self, player: PlayerID, state: StateKey<T>, value: T) {
         self.set_team_state(player.into(), state, value)
     }
 
-    pub fn update_player_state<T: Clone>(&mut self, player: PlayerID, state: StateKey<T>) -> &mut T {
+    pub fn update_player_state<T: 'static + Clone>(&mut self, player: PlayerID, state: StateKey<T>) -> &mut T {
         self.update_team_state(player.into(), state)
     }
 
     //TODO: fix me
-    pub fn inspect_player_state<T>(&self, player: PlayerID, state: &'static StateKey<T>) -> &T {
+    pub fn inspect_player_state<T: 'static>(&self, player: PlayerID, state: &'static StateKey<T>) -> &T {
         self.inspect_team_state(player.into(), state)
     }
 
     pub fn player(&self, player: PlayerID) -> &Player {
-        &self.players[player]
+        &self.players[&player]
     }
 
     pub fn player_mut(&mut self, player: PlayerID) -> &mut Player {
-        &mut self.players[player]
+        self.players.get_mut(&player).unwrap()
     }
 
     pub fn next(&self, player: PlayerID) -> PlayerID {
-        let index = self.player_order.iter().position(|p|*p == player);
+        let index = self.player_order.iter().position(|p|*p == player).unwrap();
         self.player_order[(index + 1) % self.player_order.len()]
     }
 
     pub fn previous(&self, player: PlayerID) -> PlayerID {
-        let index = self.player_order.iter().position(|p|*p == player);
+        let index = self.player_order.iter().position(|p|*p == player).unwrap();
         self.player_order[(index - 1 + self.player_order.len()) % self.player_order.len()]
     }
 
     pub fn add_stack(&mut self, cards: Vec<C>, owner: impl Into<Option<TeamID>>) -> StackID {
         let id = StackID::new();
-        self.stacks.insert(id, Stack::new(owner, crads));
+        self.stacks.insert(id, Stack::new(owner.into(), cards));
 
         id
     }
@@ -161,10 +163,10 @@ impl<E, C: Card> Context<E, C> {
     }
 
     pub fn stack(&self, stack: StackID) -> &Stack<E, C> {
-        &self.stacks[stack]
+        &self.stacks[&stack]
     }
 
     pub fn stack_mut(&mut self, stack: StackID) -> &mut Stack<E, C> {
-        &mut self.stacks[stack]
+        self.stacks.get_mut(&stack).unwrap()
     }
 }
