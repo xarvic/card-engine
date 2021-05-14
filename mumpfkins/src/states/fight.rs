@@ -16,7 +16,7 @@ impl Fight {
         Box::new(Self {
             fighter: Fighter::new(player),
             helper: None,
-            enemies: vec![Enemy::new(monster)]
+            enemies: vec![Enemy::new(monster)],
 
             current_turn: player,
             last_action: player,

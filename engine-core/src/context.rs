@@ -7,9 +7,6 @@ use std::any::Any;
 pub trait Context {
     type Card: Card;
     type Event;
-
-    fn add_player(&mut self) -> PlayerID;
-
 }
 
 pub struct GameContext<C: Context> {
@@ -36,7 +33,7 @@ impl<C: Card> GameContext<C> {
     }
 
     pub fn contains_card(&self, stack: StackID, card: CardID) -> bool {
-        unimplemented!()
+
     }
 
     pub fn size(&self, stack: StackID) -> usize {
@@ -112,11 +109,11 @@ impl<C: Card> GameContext<C> {
         self.stacks.remove(&stack);
     }
 
-    pub fn stack(&self, stack: StackID) -> &Stack<E, C> {
+    pub fn stack(&self, stack: StackID) -> &Stack<C> {
         &self.stacks[&stack]
     }
 
-    pub fn stack_mut(&mut self, stack: StackID) -> &mut Stack<E, C> {
+    pub fn stack_mut(&mut self, stack: StackID) -> &mut Stack<C> {
         self.stacks.get_mut(&stack).unwrap()
     }
 

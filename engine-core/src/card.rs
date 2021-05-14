@@ -23,7 +23,7 @@ impl CardID {
 }
 
 pub trait Card {
-    pub fn id(&self) -> CardID;
+    fn id(&self) -> CardID;
 }
 
 #[repr(transparent)]
