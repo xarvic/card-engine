@@ -1,5 +1,5 @@
 mod event;
-mod states;
+pub mod states;
 mod cards;
 
 fn main() {

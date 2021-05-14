@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use engine_core::CardID;
 
 pub struct Equipment {
     name: String,

@@ -1,12 +1,15 @@
-use crate::context::Context;
+use crate::context::{GameContext, Context};
 use crate::scene::Scene;
 use crate::card::Card;
 
 pub trait State {
-    type Event: Clone;
-    type Card: Card + Clone;
+    type Context: Context;
 
-    fn update(self: Box<Self>, context: &mut Context<Self::Event, Self::Card>, event: Self::Event) -> Box<dyn State<Event= Self::Event, Card = Self::Card>>;
+    fn update(
+        self: Box<Self>,
+        context: &mut GameContext<Self::Context>,
+        event: Self::Event
+    ) -> Box<dyn State<Context = Self::Context>>;
 
-    fn show(&self, context: &Context<Self::Event, Self::Card>, scene: &mut Scene);
+    fn show(&self, context: &GameContext<Self::Context>, scene: &mut Scene);
 }

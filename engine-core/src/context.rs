@@ -4,33 +4,30 @@ use crate::card::{Stack, StackID, CardID, ViewPermission, Card};
 use std::collections::{HashSet, HashMap, BTreeMap};
 use std::any::Any;
 
-#[derive(Copy, Clone, Hash, Debug, Eq, PartialEq)]
-pub struct StateKey<T> (&'static str, T);
+pub trait Context {
+    type Card: Card;
+    type Event;
 
-impl<T> StateKey<T> {
-    pub const fn new(name: &'static str, default_value: T) -> Self {
-        StateKey(name, default_value)
-    }
+    fn add_player(&mut self) -> PlayerID;
+
 }
 
-pub struct Context<E, C: Card> {
+pub struct GameContext<C: Context> {
     players: BTreeMap<PlayerID, Player>,
     player_order: Vec<PlayerID>,
-
     teams: HashMap<TeamID, Team>,
-    team_states: HashMap<(&'static str, TeamID), Box<dyn Any>>,
-
-    stacks: HashMap<StackID, Stack<E, C>>,
+    stacks: HashMap<StackID, Stack<C>>,
+    data: C,
 }
 
-impl<E, C: Card> Context<E, C> {
-    pub fn new() -> Self {
-        Context {
+impl<C: Card> GameContext<C> {
+    pub fn new(data: C) -> Self {
+        GameContext {
             players: BTreeMap::new(),
             player_order: Vec::new(),
             teams: HashMap::new(),
-            team_states: HashMap::new(),
             stacks: HashMap::new(),
+            data,
         }
     }
 
@@ -65,36 +62,6 @@ impl<E, C: Card> Context<E, C> {
         team_id
     }
 
-    pub fn get_team_state<T: 'static + Clone>(&self, team: TeamID, state: StateKey<T>) -> T {
-        self.team_states
-            .get(&(state.0, team))
-            .map_or(
-                state.1.clone(),
-                |element|element.downcast_ref::<T>().unwrap().clone()
-            )
-
-    }
-
-    pub fn update_team_state<T: 'static + Clone>(&mut self, team: TeamID, state: StateKey<T>) -> &mut T {
-        self.team_states
-            .entry((state.0, team))
-            .or_insert(Box::new(state.1.clone()))
-            .downcast_mut()
-            .unwrap()
-    }
-
-    //TODO: fix me
-    pub fn inspect_team_state<T>(&self, team: TeamID, state: &'static StateKey<T>) -> &T {
-        self.team_states
-            .get(&(state.0, team)).map(|data|data.downcast_ref().unwrap())
-            .unwrap_or(&state.1)
-    }
-
-
-    pub fn set_team_state<T: 'static>(&mut self, team: TeamID, state: StateKey<T>, value: T) {
-        self.team_states.insert((state.0, team), Box::new(value));
-    }
-
     pub fn team(&self, team: TeamID) -> &Team {
         &self.teams[&team]
     }
@@ -114,23 +81,6 @@ impl<E, C: Card> Context<E, C> {
         self.teams.insert(id.into(), Team::new(name, this));
 
         id
-    }
-
-    pub fn get_player_state<T: 'static + Clone>(&self, player: PlayerID, state: StateKey<T>) -> T {
-        self.get_team_state(player.into(), state)
-    }
-
-    pub fn set_player_state<T: 'static>(&mut self, player: PlayerID, state: StateKey<T>, value: T) {
-        self.set_team_state(player.into(), state, value)
-    }
-
-    pub fn update_player_state<T: 'static + Clone>(&mut self, player: PlayerID, state: StateKey<T>) -> &mut T {
-        self.update_team_state(player.into(), state)
-    }
-
-    //TODO: fix me
-    pub fn inspect_player_state<T: 'static>(&self, player: PlayerID, state: &'static StateKey<T>) -> &T {
-        self.inspect_team_state(player.into(), state)
     }
 
     pub fn player(&self, player: PlayerID) -> &Player {
@@ -168,5 +118,13 @@ impl<E, C: Card> Context<E, C> {
 
     pub fn stack_mut(&mut self, stack: StackID) -> &mut Stack<E, C> {
         self.stacks.get_mut(&stack).unwrap()
+    }
+
+    pub fn data(&self) -> &D {
+        &self.data
+    }
+
+    pub fn data_mut(&mut self) -> &mut D {
+        &mut self.data
     }
 }

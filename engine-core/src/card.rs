@@ -2,7 +2,7 @@ use std::num::NonZeroU64;
 use crate::util::{Counter, AnyID};
 use std::sync::Arc;
 use crate::player::{TeamID, PlayerID};
-use crate::context::Context;
+use crate::context::{GameContext, Context};
 
 #[repr(transparent)]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
@@ -23,7 +23,7 @@ impl CardID {
 }
 
 pub trait Card {
-
+    pub fn id(&self) -> CardID;
 }
 
 #[repr(transparent)]
@@ -56,15 +56,15 @@ pub enum ViewPermission {
     Hide
 }
 
-pub struct Stack<E, C: Card> {
+pub struct Stack<C: Context> {
     pub(crate) owner: Option<(TeamID, ViewPermission)>,
     pub(crate) view_permission: ViewPermission,
     pub(crate) content: Vec<C>,
-    on_action: Option<Box<dyn Fn(&Context<E, C>, PlayerID) -> Option<E>>>,
-    on_drag_card: Option<Box<dyn Fn(&Context<E, C>, PlayerID, CardID, StackID) -> Option<E>>>,
+    on_action: Option<Box<dyn Fn(&GameContext<C>, PlayerID) -> Option<E>>>,
+    on_drag_card: Option<Box<dyn Fn(&GameContext<C>, PlayerID, CardID, StackID) -> Option<E>>>,
 }
 
-impl<E, C: Card> Stack<E, C> {
+impl<C: Card> Stack<C> {
     pub fn new(owner: Option<TeamID>, content: Vec<C>) -> Self {
         Self {
             owner: owner.map(|x|(x, ViewPermission::Show)),
@@ -73,5 +73,13 @@ impl<E, C: Card> Stack<E, C> {
             on_action: None,
             on_drag_card: None
         }
+    }
+
+    pub fn push(&mut self, card: C) {
+        self.content.push(card)
+    }
+
+    pub fn pop(&mut self) -> Option<C> {
+        self.content.pop()
     }
 }

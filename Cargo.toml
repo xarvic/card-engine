@@ -1,9 +1,11 @@
 [workspace]
 members = [
+    "bevy-cards",
     "engine-core",
     "mumpfkins",
 ]
 
 default-members = [
+    "bevy-cards",
     "engine-core",
 ]

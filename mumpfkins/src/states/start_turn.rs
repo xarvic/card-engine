@@ -1,7 +1,6 @@
-use engine_core::{PlayerID, State, Context, Scene}
-use std::alloc::Global;
+use engine_core::{PlayerID, State, Scene};
+use crate::states::{MumpfkinsData, MumpfkinsContext, MumpfkinsState};
 use crate::event::MumpfkinsEvent;
-use crate::cards::MumpfkinsCard;
 use crate::states::end_turn::EndTurn;
 use crate::states::fight::Fight;
 
@@ -18,17 +17,21 @@ impl EnterDoor {
 }
 
 impl State for EnterDoor {
-    type Event = MumpfkinsEvent;
-    type Card = MumpfkinsCard;
+    type Context = MumpfkinsData;
 
-    fn update(self: Box<Self>, context: &mut Context<Self::Event, Self::Card>, event: MumpfkinsEvent) -> Box<dyn State<Event=Self::Event, Card=Self::Card>> {
+    fn update(self: Box<Self>, context: &mut MumpfkinsContext, event: MumpfkinsEvent) -> Box<MumpfkinsState> {
         match event {
-            MumpfkinsEvent::EnterDoor => Provoke::new(self.player),
+            MumpfkinsEvent::EnterDoor => {
+                context.card_stack_mut()
+
+
+                Provoke::new(self.player)
+            },
             _ => self,
         }
     }
 
-    fn show(&self, context: &Context<Self::Event, Self::Card>, scene: &mut Scene) {
+    fn show(&self, context: &MumpfkinsContext, scene: &mut Scene) {
         unimplemented!()
     }
 }
@@ -46,10 +49,9 @@ impl Provoke {
 }
 
 impl State for Provoke {
-    type Event = MumpfkinsEvent;
-    type Card = MumpfkinsCard;
+    type Context = MumpfkinsData;
 
-    fn update(self: Box<Self>, context: &mut Context<Self::Event, Self::Card>, event: MumpfkinsEvent) -> Box<dyn State<Event=Self::Event, Card=Self::Card>> {
+    fn update(self: Box<Self>, context: &mut MumpfkinsContext, event: MumpfkinsEvent) -> Box<MumpfKinsState> {
         match event {
             MumpfkinsEvent::TakeCard => {
                 EndTurn::new(self.player)
@@ -61,7 +63,7 @@ impl State for Provoke {
         }
     }
 
-    fn show(&self, context: &Context<Self::Event, Self::Card>, scene: &mut Scene) {
+    fn show(&self, context: &MumpfkinsContext, scene: &mut Scene) {
         unimplemented!()
     }
 }
