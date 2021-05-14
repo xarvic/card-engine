@@ -1,3 +1,5 @@
+mod engine_controller;
+
 #[cfg(test)]
 mod tests {
     #[test]
